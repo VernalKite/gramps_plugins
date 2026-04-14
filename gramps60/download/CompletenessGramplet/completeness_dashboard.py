@@ -36,14 +36,15 @@ class CompletenessGramplet(Gramplet):
             person = db.get_person_from_handle(handle)
 
             birth_ref = person.get_birth_ref()
-            if not birth_ref:
-                no_birth_date += 1
-            else:
+            if birth_ref:
                 ev = db.get_event_from_handle(birth_ref.ref)
                 if ev.get_date_object().is_empty():
                     no_birth_date += 1
                 if not ev.get_place_handle():
                     no_birth_place += 1
+            else:
+                no_birth_date += 1
+                no_birth_place += 1  # если нет события рождения — место тоже неизвестно
 
             death_ref = person.get_death_ref()
             if not death_ref:
