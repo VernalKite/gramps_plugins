@@ -57,11 +57,20 @@ class CompletenessGramplet(Gramplet):
             if not person.get_media_list():
                 no_photo += 1
 
+        _BAR_WIDTH = 20
+        fields = [
+            ("Дата рождения",  no_birth_date),
+            ("Дата смерти",    no_death_date),
+            ("Место рождения", no_birth_place),
+            ("Фото",           no_photo),
+        ]
+
         self.set_text("")
         self.append_text("Всего персон: %d\n\n" % total)
-        self.append_text("Без даты рождения:  %d (%.0f%%)\n" % (no_birth_date,  100 * no_birth_date  / total))
-        self.append_text("Без даты смерти:    %d (%.0f%%)\n" % (no_death_date,  100 * no_death_date  / total))
-        self.append_text("Без места рождения: %d (%.0f%%)\n" % (no_birth_place, 100 * no_birth_place / total))
-        self.append_text("Без фото:           %d (%.0f%%)\n" % (no_photo,       100 * no_photo       / total))
+        self.append_text("Отсутствующие данные:\n")
+        for label, count in fields:
+            pct = 100 * count // total
+            bar = "█" * (pct * _BAR_WIDTH // 100)
+            self.append_text("  %-17s %3d%%  %s\n" % (label + ":", pct, bar))
         self.append_text("", scroll_to="begin")
         yield False
