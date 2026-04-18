@@ -72,5 +72,43 @@ class CompletenessGramplet(Gramplet):
             pct = 100 * count // total
             bar = "█" * (pct * _BAR_WIDTH // 100)
             self.append_text("  %-17s %3d%%  %s\n" % (label + ":", pct, bar))
+        # второй проход — считаем пропуски по каждой персоне отдельно
+        person_data = []
+        for handle in handles:
+            yield True
+            person = db.get_person_from_handle(handle)
+            miss = 0
+
+            birth_ref = person.get_birth_ref()
+            if birth_ref:
+                ev = db.get_event_from_handle(birth_ref.ref)
+                if ev.get_date_object().is_empty():
+                    miss += 1
+                if not ev.get_place_handle():
+                    miss += 1
+            else:
+                miss += 2
+
+            death_ref = person.get_death_ref()
+            if not death_ref:
+                miss += 1
+            else:
+                ev = db.get_event_from_handle(death_ref.ref)
+                if ev.get_date_object().is_empty():
+                    miss += 1
+
+            if not person.get_media_list():
+                miss += 1
+
+            pname = person.get_primary_name()
+            name = ("%s %s" % (pname.get_first_name(), pname.get_surname())).strip()
+            person_data.append((miss, name or "Без имени", handle))
+
+        person_data.sort(reverse=True)
+
+        self.append_text("\nТоп-10 самых неполных персон:\n")
+        for i, (miss, name, _handle) in enumerate(person_data[:10], 1):
+            self.append_text("  %d. %s (%d/4)\n" % (i, name, 4 - miss))
+
         self.append_text("", scroll_to="begin")
         yield False
