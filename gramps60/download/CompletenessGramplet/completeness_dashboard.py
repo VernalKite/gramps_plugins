@@ -1,10 +1,12 @@
 # encoding:utf-8
 from gramps.gen.plug import Gramplet
+from gramps.gen.display.name import displayer as name_displayer
 
 
 class CompletenessGramplet(Gramplet):
 
     def init(self):
+        self.set_use_markup(True)
         self.set_text("Нет данных")
 
     def db_changed(self):
@@ -44,7 +46,7 @@ class CompletenessGramplet(Gramplet):
                     no_birth_place += 1
             else:
                 no_birth_date += 1
-                no_birth_place += 1  # если нет события рождения — место тоже неизвестно
+                no_birth_place += 1
 
             death_ref = person.get_death_ref()
             if not death_ref:
@@ -66,12 +68,14 @@ class CompletenessGramplet(Gramplet):
         ]
 
         self.set_text("")
+        self.render_text("<b>Полнота базы данных</b>\n\n")
         self.append_text("Всего персон: %d\n\n" % total)
-        self.append_text("Отсутствующие данные:\n")
+        self.render_text("<b>Отсутствующие данные:</b>\n")
         for label, count in fields:
             pct = 100 * count // total
             bar = "█" * (pct * _BAR_WIDTH // 100)
             self.append_text("  %-17s %3d%%  %s\n" % (label + ":", pct, bar))
+
         # второй проход — считаем пропуски по каждой персоне отдельно
         person_data = []
         for handle in handles:
@@ -100,15 +104,17 @@ class CompletenessGramplet(Gramplet):
             if not person.get_media_list():
                 miss += 1
 
-            pname = person.get_primary_name()
-            name = ("%s %s" % (pname.get_first_name(), pname.get_surname())).strip()
+            name = name_displayer.display(person)
             person_data.append((miss, name or "Без имени", handle))
 
         person_data.sort(reverse=True)
 
-        self.append_text("\nТоп-10 самых неполных персон:\n")
-        for i, (miss, name, _handle) in enumerate(person_data[:10], 1):
-            self.append_text("  %d. %s (%d/4)\n" % (i, name, 4 - miss))
+        self.append_text("\n")
+        self.render_text("<b>Топ-10 самых неполных персон:</b>\n")
+        for i, (miss, name, handle) in enumerate(person_data[:10], 1):
+            self.append_text("  %d. " % i)
+            self.link(name, "Person", handle)
+            self.append_text(" (%d/4)\n" % (4 - miss))
 
         self.append_text("", scroll_to="begin")
         yield False
