@@ -2,6 +2,9 @@
 from gramps.gen.plug import Gramplet
 from gramps.gen.display.name import displayer as name_displayer
 
+_TOP_N = 10
+_BAR_WIDTH = 20
+
 
 class CompletenessGramplet(Gramplet):
 
@@ -28,43 +31,52 @@ class CompletenessGramplet(Gramplet):
             yield False
             return
 
-        no_birth_date = 0
-        no_death_date = 0
-        no_birth_place = 0
-        no_photo = 0
+        counts = {"birth_date": 0, "death_date": 0, "birth_place": 0, "photo": 0}
+        person_scores = []
 
         for handle in handles:
             yield True
             person = db.get_person_from_handle(handle)
+            missing = 0
 
             birth_ref = person.get_birth_ref()
             if birth_ref:
                 ev = db.get_event_from_handle(birth_ref.ref)
                 if ev.get_date_object().is_empty():
-                    no_birth_date += 1
+                    counts["birth_date"] += 1
+                    missing += 1
                 if not ev.get_place_handle():
-                    no_birth_place += 1
+                    counts["birth_place"] += 1
+                    missing += 1
             else:
-                no_birth_date += 1
-                no_birth_place += 1
+                counts["birth_date"] += 1
+                counts["birth_place"] += 1
+                missing += 2
 
             death_ref = person.get_death_ref()
-            if not death_ref:
-                no_death_date += 1
-            else:
+            if death_ref:
                 ev = db.get_event_from_handle(death_ref.ref)
                 if ev.get_date_object().is_empty():
-                    no_death_date += 1
+                    counts["death_date"] += 1
+                    missing += 1
+            else:
+                counts["death_date"] += 1
+                missing += 1
 
             if not person.get_media_list():
-                no_photo += 1
+                counts["photo"] += 1
+                missing += 1
 
-        _BAR_WIDTH = 20
+            name = name_displayer.display(person)
+            person_scores.append((missing, name or "Без имени", handle))
+
+        person_scores.sort(reverse=True)
+
         fields = [
-            ("Дата рождения",  no_birth_date),
-            ("Дата смерти",    no_death_date),
-            ("Место рождения", no_birth_place),
-            ("Фото",           no_photo),
+            ("Дата рождения",  counts["birth_date"]),
+            ("Дата смерти",    counts["death_date"]),
+            ("Место рождения", counts["birth_place"]),
+            ("Фото",           counts["photo"]),
         ]
 
         self.set_text("")
@@ -76,45 +88,12 @@ class CompletenessGramplet(Gramplet):
             bar = "█" * (pct * _BAR_WIDTH // 100)
             self.append_text("  %-17s %3d%%  %s\n" % (label + ":", pct, bar))
 
-        # второй проход — считаем пропуски по каждой персоне отдельно
-        person_data = []
-        for handle in handles:
-            yield True
-            person = db.get_person_from_handle(handle)
-            miss = 0
-
-            birth_ref = person.get_birth_ref()
-            if birth_ref:
-                ev = db.get_event_from_handle(birth_ref.ref)
-                if ev.get_date_object().is_empty():
-                    miss += 1
-                if not ev.get_place_handle():
-                    miss += 1
-            else:
-                miss += 2
-
-            death_ref = person.get_death_ref()
-            if not death_ref:
-                miss += 1
-            else:
-                ev = db.get_event_from_handle(death_ref.ref)
-                if ev.get_date_object().is_empty():
-                    miss += 1
-
-            if not person.get_media_list():
-                miss += 1
-
-            name = name_displayer.display(person)
-            person_data.append((miss, name or "Без имени", handle))
-
-        person_data.sort(reverse=True)
-
         self.append_text("\n")
-        self.render_text("<b>Топ-10 самых неполных персон:</b>\n")
-        for i, (miss, name, handle) in enumerate(person_data[:10], 1):
+        self.render_text("<b>Топ-%d самых неполных персон:</b>\n" % _TOP_N)
+        for i, (missing, name, handle) in enumerate(person_scores[:_TOP_N], 1):
             self.append_text("  %d. " % i)
             self.link(name, "Person", handle)
-            self.append_text(" (%d/4)\n" % (4 - miss))
+            self.append_text(" (%d/4)\n" % (4 - missing))
 
         self.append_text("", scroll_to="begin")
         yield False
