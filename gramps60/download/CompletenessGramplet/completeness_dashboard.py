@@ -86,7 +86,7 @@ class CompletenessGramplet(Gramplet):
         for label, count in fields:
             pct = 100 * count // total
             bar = "█" * (pct * _BAR_WIDTH // 100)
-            self.append_text("  %-17s %3d%%  %s\n" % (label + ":", pct, bar))
+            self.append_text("  %-17s %3d%% (%d/%d)  %s\n" % (label + ":", pct, count, total, bar))
 
         self.append_text("\n")
         self.render_text("<b>Топ-%d самых неполных персон:</b>\n" % _TOP_N)
