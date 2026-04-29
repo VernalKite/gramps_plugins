@@ -3,7 +3,6 @@ from gramps.gen.plug import Gramplet
 from gramps.gen.display.name import displayer as name_displayer
 
 _TOP_N = 10
-_BAR_WIDTH = 20
 
 
 class CompletenessGramplet(Gramplet):
@@ -86,9 +85,7 @@ class CompletenessGramplet(Gramplet):
         w = len(str(total))
         for label, count in fields:
             pct = 100 * count // total
-            filled = pct * _BAR_WIDTH // 100
-            bar = "█" * filled + "░" * (_BAR_WIDTH - filled)
-            self.append_text("  %-17s %3d%% (%*d/%d)  %s\n" % (label + ":", pct, w, count, total, bar))
+            self.append_text("  %-17s %3d%% (%*d/%d)\n" % (label + ":", pct, w, count, total))
 
         self.append_text("\n")
         self.render_text("<b>Топ-%d самых неполных персон:</b>\n" % _TOP_N)
