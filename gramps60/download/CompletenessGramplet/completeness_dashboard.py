@@ -83,10 +83,12 @@ class CompletenessGramplet(Gramplet):
         self.render_text("<b>Полнота базы данных</b>\n\n")
         self.append_text("Всего персон: %d\n\n" % total)
         self.render_text("<b>Отсутствующие данные:</b>\n")
+        w = len(str(total))
         for label, count in fields:
             pct = 100 * count // total
-            bar = "█" * (pct * _BAR_WIDTH // 100)
-            self.append_text("  %-17s %3d%% (%d/%d)  %s\n" % (label + ":", pct, count, total, bar))
+            filled = pct * _BAR_WIDTH // 100
+            bar = "█" * filled + "░" * (_BAR_WIDTH - filled)
+            self.append_text("  %-17s %3d%% (%*d/%d)  %s\n" % (label + ":", pct, w, count, total, bar))
 
         self.append_text("\n")
         self.render_text("<b>Топ-%d самых неполных персон:</b>\n" % _TOP_N)
