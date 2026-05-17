@@ -39,8 +39,8 @@ def completeness_calculator(database, person):
             filled_fields += 1
             break
 
-    field_value = 20 if death_ref else 25
-    return filled_fields * field_value
+    coefficient = 20 # (for each of the five fields worth is 20% (20% * 5 = 100%))
+    return filled_fields * coefficient
 
 
 def people_collector(database): 
